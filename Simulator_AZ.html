@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Azeotropic Distillation Simulator — ChE 206 | IIT Indore</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* LIGHT MODE VARIABLES */
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: #cbd5e1;
+  --accent: #0284c7; 
+  --accent2: #7c3aed;
+  --accent3: #059669; 
+  --accent4: #d97706; 
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --text-dim: #475569;
+  --red: #ef4444;
+  --ethanol: #0284c7;
+  --water: #2563eb;
+  --cyclohexane: #059669;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+header {
+  position: relative;
+  z-index: 10;
+  padding: 24px 40px 20px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(248,250,252,0.9) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header-left { display: flex; flex-direction: column; gap: 4px; }
+
+.header-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+header h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+header h1 span { color: var(--accent); font-style: italic; }
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.team-tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'Space Mono', monospace;
+}
+
+.institute-tag {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.tabs-bar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0 40px;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  padding: 14px 20px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover { color: var(--accent); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.main-content {
+  position: relative;
+  z-index: 5;
+  padding: 32px 40px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+
+.card-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.grid-main { display: grid; grid-template-columns: 340px 1fr; gap: 20px; }
+.grid-65-35 { display: grid; grid-template-columns: 1.8fr 1fr; gap: 20px; }
+
+.param-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.param-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.param-label span:first-child { font-family: 'Space Mono', monospace; font-size: 11px; }
+.param-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 700;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+input[type=number] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type=number]:focus { 
+  border-color: var(--accent); 
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+input[readonly] { background: var(--surface2); color: var(--text-dim); font-weight: bold; cursor: not-allowed; border-color: transparent;}
+
+.process-diagram { display: flex; align-items: center; justify-content: center; gap: 0; padding: 20px 0; overflow-x: auto; }
+.result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+
+.result-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+.result-card .label { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; font-weight: 700; }
+.result-card .value { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; color: var(--accent); }
+.result-card .unit { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+.section-title { font-family: 'DM Serif Display', serif; font-size: 24px; margin-bottom: 24px; color: var(--text); }
+.section-title span { color: var(--accent); }
+
+.eq-box { background: var(--surface2); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 10px 0; font-family: 'Space Mono', monospace; font-size: 13px; color: var(--text-dim); line-height: 1.8; }
+.eq-box .eq-label { font-size: 10px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; font-weight: 700; }
+
+.calc-table { width: 100%; border-collapse: collapse; font-family: 'Space Mono', monospace; font-size: 12px; margin-top: 10px; background: var(--surface); }
+.calc-table th { background: var(--surface2); color: var(--text-dim); padding: 12px 14px; text-align: left; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--border); }
+.calc-table td { padding: 10px 14px; border: 1px solid var(--border); color: var(--text-dim); }
+.calc-table tr:hover td { background: #f8fafc; }
+.calc-table .highlight { color: var(--accent); font-weight: 700; }
+
+.chart-container { position: relative; height: 300px; }
+.chart-container-lg { position: relative; height: 380px; }
+
+.process-flow-wrap { width: 100%; overflow-x: auto; padding: 10px 0; background: var(--surface); border-radius: 8px; }
+
+.toggle-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.toggle-btn { padding: 6px 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.toggle-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(2, 132, 199, 0.05); }
+
+.footnote { font-size: 11px; color: var(--text-muted); margin-top: 10px; font-style: italic; }
+
+.warning { background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.3); border-radius: 6px; padding: 10px 12px; font-size: 11px; color: var(--accent4); font-family: 'Space Mono', monospace; font-weight: bold; display: none; }
+.warning.show { display: block; }
+
+/* ── NRTL vs Ideal comparison panel ── */
+.method-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 14px; }
+.method-col { padding: 16px; }
+.method-col.ideal  { background: #fefce8; border-right: 1px solid var(--border); }
+.method-col.nrtl   { background: #f0fdf4; }
+.method-col-title  { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; margin-bottom: 12px; }
+.method-col.ideal  .method-col-title { color: var(--accent4); }
+.method-col.nrtl   .method-col-title { color: var(--accent3); }
+.method-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border); font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-dim); }
+.method-row:last-child { border-bottom: none; }
+.method-val { font-size: 15px; font-weight: 700; }
+.method-col.ideal .method-val { color: var(--accent4); }
+.method-col.nrtl  .method-val { color: var(--accent3); }
+.method-big { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-dim); margin-top: 10px; padding: 8px 10px; border-radius: 6px; }
+.method-col.ideal .method-big { background: rgba(217,119,6,0.08); }
+.method-col.nrtl  .method-big { background: rgba(5,150,105,0.08); }
+.method-big .big-val { font-size: 26px; font-weight: 700; display: block; margin-top: 2px; }
+.method-col.ideal .big-val { color: var(--accent4); }
+.method-col.nrtl  .big-val { color: var(--accent3); }
+.nrtl-flow-arrow { display: flex; align-items: center; gap: 8px; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted); margin: 8px 0; }
+.nrtl-flow-arrow::before, .nrtl-flow-arrow::after { content:''; flex:1; height:1px; background:var(--border); }
+.alpha-badge { display:inline-block; background:var(--surface2); border:1px solid var(--border); border-radius:4px; font-family:'Space Mono',monospace; font-size:10px; padding:2px 7px; color:var(--text-dim); margin-left:6px; }
+
+@media (max-width: 900px) {
+  .grid-main, .grid-2, .grid-3, .grid-65-35 { grid-template-columns: 1fr; }
+  .main-content { padding: 20px; }
+  header { padding: 16px 20px; }
+  .tabs-bar { padding: 0 20px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <span class="header-badge">▸ ChE 206 · Separation Processes</span>
+    <h1>Azeotropic Distillation <span>Simulator</span></h1>
+  </div>
+  <div class="header-right">
+    <span class="institute-tag">IIT Indore — Dept. of Chemical Engineering</span>
+    <span class="team-tag">Team: 240008001, 240008008, 240008011, 240008013</span>
+  </div>
+</header>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="showTab('process')">⬡ Process & Simulator</button>
+  <button class="tab-btn" onclick="showTab('sensitivity')">◈ Sensitivity Analysis</button>
+  <button class="tab-btn" onclick="showTab('equilibrium')">◉ Equilibrium Curves</button>
+  <button class="tab-btn" onclick="showTab('calculations')">≋ Sample Calculations</button>
+</div>
+
+<div class="tab-panel active" id="tab-process">
+<div class="main-content">
+  <div class="grid-main">
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <div class="card">
+        <div class="card-title">Operating Conditions</div>
+        <div class="param-group">
+          <div class="param-label">
+            <span>Temperature (T)</span>
+            <span class="param-value" id="val-T">78 °C</span>
+          </div>
+          <input type="range" min="60" max="100" step="0.5" value="78" id="sl-T" oninput="updateVal('T',this.value,'°C');runSim()">
+        </div>
+        <div class="param-group">
+          <div class="param-label">
+            <span>Pressure (P)</span>
+            <span class="param-value" id="val-P">760 mmHg</span>
+          </div>
+          <input type="range" min="400" max="1200" step="10" value="760" id="sl-P" oninput="updateVal('P',this.value,'mmHg');runSim()">
+        </div>
+        <div class="param-group">
+          <div class="param-label">
+            <span>Reflux Ratio (R)</span>
+            <span class="param-value" id="val-R">3.0</span>
+          </div>
+          <input type="range" min="1.0" max="10" step="0.1" value="3.0" id="sl-R" oninput="updateVal('R',this.value,'');runSim()">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Feed Composition (Mole Fraction)</div>
+        <div class="param-group">
+          <div class="param-label">
+            <span style="color:var(--ethanol); font-weight:700;">■ Ethanol (x₁)</span>
+            <span class="param-value" style="color:var(--ethanol)" id="val-x1">0.400</span>
+          </div>
+          <input type="range" min="0.01" max="0.90" step="0.01" value="0.40" id="sl-x1" oninput="updateComp('x1',this.value);runSim()">
+        </div>
+        <div class="param-group">
+          <div class="param-label">
+            <span style="color:var(--water); font-weight:700;">■ Water (x₂)</span>
+            <span class="param-value" style="color:var(--water)" id="val-x2">0.500</span>
+          </div>
+          <input type="range" min="0.01" max="0.90" step="0.01" value="0.50" id="sl-x2" oninput="updateComp('x2',this.value);runSim()">
+        </div>
+        <div class="param-group">
+          <div class="param-label">
+            <span style="color:var(--cyclohexane); font-weight:700;">■ Cyclohexane (x₃)</span>
+            <span class="param-value" style="color:var(--cyclohexane)" id="val-x3">0.100</span>
+          </div>
+          <input type="range" min="0.01" max="0.50" step="0.01" value="0.10" id="sl-x3" oninput="updateComp('x3',this.value);runSim()">
+        </div>
+        <div id="comp-warning" class="warning">⚠ Compositions auto-normalized to sum = 1.0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Mass Balance Inputs & Feed Condition</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <div class="param-label" style="margin-bottom:4px;"><span>Feed F (mol/hr)</span></div>
+            <input type="number" id="inp-F" value="100" min="1" max="1000" oninput="runSim()">
+          </div>
+          <div>
+            <div class="param-label" style="margin-bottom:4px;"><span>Feed Condition (q)</span></div>
+            <input type="number" id="inp-q" value="1.0" min="0" max="2" step="0.1" oninput="runSim()">
+          </div>
+          <div>
+            <div class="param-label" style="margin-bottom:4px;"><span>xD Ethanol</span></div>
+            <input type="number" id="inp-xD1" value="0.55" min="0" max="1" step="0.01" oninput="runSim()">
+          </div>
+          <div>
+            <div class="param-label" style="margin-bottom:4px;"><span>xB Bottoms (Target)</span></div>
+            <input type="number" id="inp-fxB" value="0.01" min="0.001" max="0.5" step="0.001" oninput="runSim()">
+          </div>
+        </div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 10px; text-align: center; font-weight: 500;">
+          q=1: Saturated Liquid | q=0: Saturated Vapor
+        </div>
+      </div>
+
+      <div class="card" style="border-color: var(--accent2)">
+        <div class="card-title" style="color:var(--accent2)">Calculated Design Parameters (FUG)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <div class="param-label" style="margin-bottom:4px;"><span>Rel Volatility (α₁₂)</span></div>
+            <input type="text" id="calc-alpha" readonly>
+          </div>
+          <div>
+            <div class="param-label" style="margin-bottom:4px;"><span>Underwood (θ)</span></div>
+            <input type="text" id="calc-theta" readonly>
+          </div>
+        </div>
+        <p class="footnote" style="margin-top:12px;">α is explicitly evaluated at feed conditions. θ solved numerically via Underwood formulation mapping to q.</p>
+      </div>
+
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <div class="card">
+        <div class="card-title">Azeotropic Distillation Process Flow Diagram</div>
+        <div class="process-flow-wrap">
+          <svg id="process-svg" viewBox="0 0 850 360" width="100%" style="min-width:700px; font-family: Inter, sans-serif;">
+            <defs>
+              <marker id="arr-blue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2563eb"/></marker>
+              <marker id="arr-purple" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7c3aed"/></marker>
+              <marker id="arr-green" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#059669"/></marker>
+              <marker id="arr-black" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#0f172a"/></marker>
+            </defs>
+            <rect x="100" y="100" width="70" height="220" rx="15" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+            <text x="135" y="125" text-anchor="middle" fill="#0369a1" font-size="12" font-weight="bold">COL-1</text>
+            <text x="135" y="140" text-anchor="middle" fill="#0369a1" font-size="10">Azeotropic</text>
+            <line x1="100" y1="170" x2="170" y2="170" stroke="#0284c7" stroke-dasharray="4,2"/>
+            <line x1="100" y1="200" x2="170" y2="200" stroke="#0284c7" stroke-dasharray="4,2"/>
+            <line x1="100" y1="230" x2="170" y2="230" stroke="#0284c7" stroke-dasharray="4,2"/>
+            <line x1="100" y1="260" x2="170" y2="260" stroke="#0284c7" stroke-dasharray="4,2"/>
+            <rect x="460" y="80" width="100" height="130" rx="15" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
+            <path d="M 460 95 Q 510 70 560 95" fill="none" stroke="#d97706" stroke-width="2"/>
+            <text x="510" y="95" text-anchor="middle" fill="#d97706" font-size="10" font-weight="bold">Decanter</text>
+            <rect x="462" y="105" width="96" height="50" fill="#dcfce7"/>
+            <text x="510" y="125" text-anchor="middle" fill="#059669" font-size="11" font-weight="bold">Organic Phase</text>
+            <line x1="462" y1="155" x2="558" y2="155" stroke="#475569" stroke-dasharray="4,2"/>
+            <rect x="462" y="155" width="96" height="40" fill="#dbeafe"/>
+            <text x="510" y="175" text-anchor="middle" fill="#2563eb" font-size="11" font-weight="bold">Aqueous Phase</text>
+            <rect x="680" y="120" width="70" height="180" rx="15" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+            <text x="715" y="150" text-anchor="middle" fill="#0369a1" font-size="12" font-weight="bold">COL-2</text>
+            <text x="715" y="165" text-anchor="middle" fill="#0369a1" font-size="10">Recovery</text>
+            <line x1="680" y1="190" x2="750" y2="190" stroke="#0284c7" stroke-dasharray="4,2"/>
+            <line x1="680" y1="220" x2="750" y2="220" stroke="#0284c7" stroke-dasharray="4,2"/>
+            <line x1="680" y1="250" x2="750" y2="250" stroke="#0284c7" stroke-dasharray="4,2"/>
+            <line x1="20" y1="200" x2="95" y2="200" stroke="#0f172a" stroke-width="2" marker-end="url(#arr-black)"/>
+            <circle cx="20" cy="180" r="10" fill="#1e40af"/><text x="20" y="184" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">1</text>
+            <text x="35" y="184" fill="#1e40af" font-size="11" font-weight="bold">F (Feed)</text>
+            <polyline points="135,100 135,70 450,70 450,80" fill="none" stroke="#7c3aed" stroke-width="2" marker-end="url(#arr-purple)"/>
+            <circle cx="280" cy="60" r="10" fill="#7e22ce"/><text x="280" y="64" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">2</text>
+            <text x="295" y="64" fill="#7e22ce" font-size="10" font-weight="bold">Ternary Azeotrope Vapor</text>
+            <polyline points="460,140 280,140 280,120 175,120" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#arr-green)"/>
+            <circle cx="330" cy="130" r="10" fill="#059669"/><text x="330" y="134" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">4</text>
+            <text x="290" y="155" fill="#059669" font-size="10" font-weight="bold">Organic Recycle</text>
+            <polyline points="560,190 610,190 610,210 675,210" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arr-blue)"/>
+            <circle cx="610" cy="170" r="10" fill="#1e40af"/><text x="610" y="174" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">5</text>
+            <text x="575" y="235" fill="#2563eb" font-size="10" font-weight="bold">Aqueous Feed</text>
+            <polyline points="715,120 715,30 155,30 155,95" fill="none" stroke="#059669" stroke-width="2" marker-dasharray="4,4" marker-end="url(#arr-green)"/>
+            <circle cx="770" cy="40" r="10" fill="#059669"/><text x="770" y="44" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">6</text>
+            <text x="785" y="40" fill="#059669" font-size="10" font-weight="bold">EtOH Recycle</text>
+            <line x1="135" y1="320" x2="135" y2="350" stroke="#0f172a" stroke-width="2" marker-end="url(#arr-black)"/>
+            <circle cx="110" cy="340" r="10" fill="#1e40af"/><text x="110" y="344" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">8</text>
+            <text x="125" y="344" fill="#1e40af" font-size="10" font-weight="bold">Anhydrous EtOH (≥99%)</text>
+            <line x1="715" y1="300" x2="715" y2="350" stroke="#0f172a" stroke-width="2" marker-end="url(#arr-black)"/>
+            <circle cx="690" cy="340" r="10" fill="#1e40af"/><text x="690" y="344" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">7</text>
+            <text x="705" y="344" fill="#1e40af" font-size="10" font-weight="bold">Pure H₂O (Bottoms)</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Real-Time Simulation Results</div>
+
+        <div class="result-grid">
+          <div class="result-card">
+            <div class="label">Actual Stages (N)</div>
+            <div class="value" id="res-stages" style="color:var(--accent3); font-size:26px;">—</div>
+            <div class="unit">via Eduljee/Gilliland</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Min Stages (Nmin)</div>
+            <div class="value" id="res-Nmin" style="color:var(--accent)">—</div>
+            <div class="unit">via Fenske</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Min Reflux (Rmin)</div>
+            <div class="value" id="res-Rmin" style="color:var(--accent4)">—</div>
+            <div class="unit">via Underwood</div>
+          </div>
+        </div>
+
+        <div class="result-grid" style="grid-template-columns: 1fr 1fr; margin-top:12px;">
+          <div class="result-card">
+            <div class="label">Distillate Flow D</div>
+            <div class="value" id="res-D" style="color:var(--text); font-size:16px;">—</div>
+            <div class="unit">mol/hr</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Bottoms Flow B</div>
+            <div class="value" id="res-B" style="color:var(--text); font-size:16px;">—</div>
+            <div class="unit">mol/hr</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Ethanol Vapor y₁</div>
+            <div class="value" id="res-y1" style="color:var(--ethanol); font-size:16px;">—</div>
+            <div class="unit">mole fraction</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Water Vapor y₂</div>
+            <div class="value" id="res-y2" style="color:var(--water); font-size:16px;">—</div>
+            <div class="unit">mole fraction</div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px; padding:12px; border:1px dashed var(--border); border-radius:8px; background:var(--bg);">
+            <div class="label" style="font-family:'Space Mono',monospace; font-size:10px; color:var(--accent); margin-bottom:8px; font-weight:700;">DECANTER PHASE SPLIT (THERMODYNAMIC LLE)</div>
+            <div style="display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:12px; color:var(--text-dim);">
+                <div><strong>Organic:</strong> <span id="lle-org-cyc" style="color:var(--cyclohexane)">-</span> CyC, <span id="lle-org-eth" style="color:var(--ethanol)">-</span> EtOH</div>
+                <div><strong>Aqueous:</strong> <span id="lle-aq-wat" style="color:var(--water)">-</span> H₂O, <span id="lle-aq-eth" style="color:var(--ethanol)">-</span> EtOH</div>
+            </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ NRTL-CORRECTED vs IDEAL DESIGN COMPARISON ═══ -->
+      <div class="card" style="border-color: var(--accent2);">
+        <div class="card-title" style="color:var(--accent2);">NRTL-Corrected vs Ideal Design — Nmin, Rmin &amp; Actual Stages</div>
+
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px;font-family:'Space Mono',monospace;">
+          <strong style="color:var(--accent4);">Ideal</strong>: constant α (at feed T) → Fenske/Underwood → Gilliland.&nbsp;&nbsp;
+          <strong style="color:var(--accent3);">NRTL</strong>: α<sub>eff</sub> = geometric mean of NRTL α evaluated at distillate &amp; bottoms bubble-points → same FUG chain.
+        </p>
+
+        <!-- flow hint -->
+        <div class="nrtl-flow-arrow">NRTL γ @ T<sub>D</sub> &amp; T<sub>B</sub> → α<sub>eff</sub> → Fenske (Nmin) → Underwood (Rmin) → Gilliland/Eduljee (N)</div>
+
+        <!-- two-column method comparison -->
+        <div class="method-cols">
+
+          <div class="method-col ideal">
+            <div class="method-col-title">⬡ Ideal — Constant α Method</div>
+            <div class="method-row">
+              <span>α₁₂ (feed T)</span>
+              <span class="method-val" id="cmp-ideal-alpha">—</span>
+            </div>
+            <div class="method-row">
+              <span>Nmin (Fenske)</span>
+              <span class="method-val" id="cmp-ideal-nmin">—</span>
+            </div>
+            <div class="method-row">
+              <span>Rmin (Underwood)</span>
+              <span class="method-val" id="cmp-ideal-rmin">—</span>
+            </div>
+            <div class="method-big">
+              Actual Stages N (Gilliland)
+              <span class="big-val" id="cmp-ideal-N">—</span>
+            </div>
+          </div>
+
+          <div class="method-col nrtl">
+            <div class="method-col-title">◉ NRTL-Corrected α<sub>eff</sub> Method</div>
+            <div class="method-row">
+              <span>α @ T<sub>D</sub></span>
+              <span class="method-val" id="cmp-nrtl-alphaD">—</span>
+            </div>
+            <div class="method-row">
+              <span>α @ T<sub>B</sub></span>
+              <span class="method-val" id="cmp-nrtl-alphaB">—</span>
+            </div>
+            <div class="method-row">
+              <span>α<sub>eff</sub> (geom. mean)</span>
+              <span class="method-val" id="cmp-nrtl-alphaEff">—</span>
+            </div>
+            <div class="method-row">
+              <span>Nmin (Fenske)</span>
+              <span class="method-val" id="cmp-nrtl-nmin">—</span>
+            </div>
+            <div class="method-row">
+              <span>Rmin (Underwood)</span>
+              <span class="method-val" id="cmp-nrtl-rmin">—</span>
+            </div>
+            <div class="method-big">
+              Actual Stages N (Gilliland)
+              <span class="big-val" id="cmp-nrtl-N">—</span>
+            </div>
+          </div>
+
+        </div>
+
+        <p class="footnote" style="margin-top:12px;">
+          T<sub>D</sub> &amp; T<sub>B</sub> bubble-points computed iteratively via NRTL. 
+          α<sub>eff</sub> = √(α<sub>D</sub> · α<sub>B</sub>). 
+          The NRTL path captures non-ideal activity variation across the column; the ideal path assumes α fixed at feed conditions.
+        </p>
+      </div>
+
+      <div class="card" style="border-color: var(--accent3);">
+        <div class="card-title" style="color:var(--accent3);">Key Equations Used in This Simulator</div>
+
+        <div class="eq-box">
+          <div class="eq-label">1 · Antoine Equation (Saturation Pressure)</div>
+          log₁₀(Pᵢˢᵃᵗ) = Aᵢ − Bᵢ / (Cᵢ + T)
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">2 · NRTL Activity Coefficient (ln γᵢ)</div>
+          ln γᵢ = [Σⱼ xⱼ·τⱼᵢ·Gⱼᵢ / Σₖ xₖ·Gₖᵢ] + Σⱼ [xⱼ·Gᵢⱼ / Σₖ xₖ·Gₖⱼ] · [τᵢⱼ − Σₖ xₖ·τₖⱼ·Gₖⱼ / Σₖ xₖ·Gₖⱼ]<br>
+          where &nbsp; Gᵢⱼ = exp(−αᵢⱼ · τᵢⱼ)
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">3 · Modified Raoult's Law (VLE)</div>
+          yᵢ = xᵢ · γᵢ · Pᵢˢᵃᵗ / P &nbsp;(raw) &nbsp;→&nbsp; normalise: yᵢ = yᵢ / Σyᵢ
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">4 · Bubble-Point Criterion</div>
+          Σᵢ xᵢ · γᵢ · Pᵢˢᵃᵗ(T) = P &nbsp;(solved iteratively for T)
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">5 · Relative Volatility</div>
+          α₁₂ = (γ₁ · P₁ˢᵃᵗ) / (γ₂ · P₂ˢᵃᵗ)
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">6 · Overall &amp; Component Mass Balance</div>
+          F = D + B &nbsp;;&nbsp; F·zᵢ = D·xDᵢ + B·xBᵢ
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">7 · Fenske Equation (Nmin)</div>
+          Nmin = ln[(xD/(1−xD)) / (xB/(1−xB))] / ln(α₁₂)
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">8 · Underwood Equations (θ &amp; Rmin)</div>
+          Root θ: &nbsp;Σᵢ [αᵢ·zᵢ / (αᵢ − θ)] = 1 − q<br>
+          Rmin = Σᵢ [αᵢ·xDᵢ / (αᵢ − θ)] − 1
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">9 · Gilliland / Eduljee Correlation (Actual Stages N)</div>
+          X = (R − Rmin) / (R + 1)<br>
+          Y = 1 − exp[ ((1 + 54.4·X) / (11 + 117.2·X)) · ((X − 1) / X^0.5) ]<br>
+          N = (Nmin + Y) / (1 − Y)
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">10 · Decanter LLE — Rachford–Rice (Phase-Split Fraction φ)</div>
+          Σⱼ [zⱼ·(Kⱼ − 1) / (1 + φ·(Kⱼ − 1))] = 0 &nbsp;;&nbsp; Kⱼ = γⱼᵃq / γⱼᵒʳᵍ<br>
+          xⱼᵃq = zⱼ / (1 + φ·(Kⱼ − 1)) &nbsp;;&nbsp; xⱼᵒʳᵍ = Kⱼ · xⱼᵃq
+
+        </div>
+
+        <div class="eq-box">
+          <div class="eq-label">11 · Rectifying Operating Line (McCabe–Thiele)</div>
+          y = [R / (R + 1)]·x + xD / (R + 1)
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="tab-panel" id="tab-sensitivity">
+<div class="main-content">
+  <div class="section-title">Sensitivity <span>Analysis</span></div>
+
+  <div class="grid-65-35" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-title">Parameter Sweep — Temperature (°C)</div>
+
+      <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="flex:1;">
+          <div class="param-label" style="margin-bottom:4px;"><span>Range Min</span></div>
+          <input type="number" id="sens-min" value="60" oninput="runSensitivity()">
+        </div>
+        <div style="flex:1;">
+          <div class="param-label" style="margin-bottom:4px;"><span>Range Max</span></div>
+          <input type="number" id="sens-max" value="90" oninput="runSensitivity()">
+        </div>
+        <div style="flex:1;">
+          <div class="param-label" style="margin-bottom:4px;"><span>Steps</span></div>
+          <input type="number" id="sens-steps" value="16" min="5" max="50" oninput="runSensitivity()">
+        </div>
+      </div>
+
+      <div class="chart-container-lg">
+        <canvas id="chart-sens"></canvas>
+      </div>
+      <p class="footnote">Fixed: P = 760 mmHg. Activity coefficients (γᵢ) dynamically calculated via NRTL. (Ref: Report Section 5.1)</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card">
+        <div class="card-title">Data Table</div>
+        <div style="max-height:380px;overflow-y:auto;">
+          <table class="calc-table" id="sens-table">
+            <thead>
+              <tr><th>Temperature (°C)</th><th>Ethanol Mole Fraction in Vapor</th></tr>
+            </thead>
+            <tbody id="sens-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="tab-panel" id="tab-equilibrium">
+<div class="main-content">
+  <div class="section-title">Equilibrium <span>Curves</span></div>
+
+  <div class="grid-2" style="margin-bottom:20px;">
+
+    <div class="card">
+      <div class="card-title">VLE: Isobaric y-x Diagram — Ethanol/Water</div>
+      <div class="toggle-group">
+        <button class="toggle-btn active" onclick="setEqP(760,this)">P = 760 mmHg</button>
+        <button class="toggle-btn" onclick="setEqP(500,this)">P = 500 mmHg</button>
+        <button class="toggle-btn" onclick="setEqP(1013,this)">P = 1013 mmHg</button>
+      </div>
+      <div class="chart-container-lg">
+        <canvas id="chart-yx"></canvas>
+      </div>
+      <p class="footnote">Strictly computed via NRTL Activity Coefficients. Temperature is calculated iteratively at the Bubble Point for every x. Azeotrope calculated mathematically.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Antoine: Saturation Pressure vs Temperature</div>
+      <div class="chart-container-lg">
+        <canvas id="chart-psat"></canvas>
+      </div>
+      <p class="footnote">Antoine Equation: log₁₀(Psat) = A − B/(C+T)</p>
+    </div>
+
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-title">Operating Lines (McCabe-Thiele)</div>
+      <div class="param-group">
+        <div class="param-label">
+          <span>Reflux Ratio R (operating line slope)</span>
+          <span class="param-value" id="val-R-eq">3.0</span>
+        </div>
+        <input type="range" min="1.0" max="10" step="0.1" value="3.0" id="sl-R-eq"
+          oninput="document.getElementById('val-R-eq').innerText=parseFloat(this.value).toFixed(1);drawMcCabe()">
+      </div>
+      <div class="param-group">
+        <div class="param-label">
+          <span>xD (distillate target)</span>
+          <span class="param-value" id="val-xD-eq">0.894</span>
+        </div>
+        <input type="range" min="0.5" max="0.99" step="0.01" value="0.894" id="sl-xD-eq"
+          oninput="document.getElementById('val-xD-eq').innerText=parseFloat(this.value).toFixed(3);drawMcCabe()">
+      </div>
+      <div class="param-group">
+        <div class="param-label">
+          <span>xB (bottoms)</span>
+          <span class="param-value" id="val-xB-eq">0.010</span>
+        </div>
+        <input type="range" min="0.001" max="0.2" step="0.001" value="0.010" id="sl-xB-eq"
+          oninput="document.getElementById('val-xB-eq').innerText=parseFloat(this.value).toFixed(3);drawMcCabe()">
+      </div>
+      <div class="chart-container-lg">
+        <canvas id="chart-mccabe"></canvas>
+      </div>
+      <p class="footnote">Rectifying line pivots exactly on (xD, xD). Equilibrium curve generated by NRTL at P = 760 mmHg.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="tab-panel" id="tab-calculations">
+<div class="main-content">
+  <div class="section-title">Sample <span>Calculations</span></div>
+  <p class="footnote" style="margin-bottom:20px;">Note: This panel rigorously synchronizes in real-time with the simulator's logic.</p>
+
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <div class="card">
+      <div class="card-title">STEP 1 — Input Parameters</div>
+      <div class="grid-3">
+        <table class="calc-table" style="margin-top:0;">
+          <thead><tr><th colspan="2">System & Feed Condition</th></tr></thead>
+          <tbody>
+            <tr><td>Temperature T</td><td class="highlight"><span id="sc1-t">--</span> °C</td></tr>
+            <tr><td>Pressure P</td><td class="highlight"><span id="sc1-p">--</span> mmHg</td></tr>
+            <tr><td>Feed q-value</td><td class="highlight"><span id="sc1-q">--</span></td></tr>
+            <tr><td>Reflux Ratio R</td><td class="highlight"><span id="sc1-r">--</span></td></tr>
+          </tbody>
+        </table>
+        
+        <table class="calc-table" style="margin-top:0;">
+          <thead><tr><th colspan="2">Feed Composition (z)</th></tr></thead>
+          <tbody>
+            <tr><td>Feed F</td><td class="highlight"><span id="sc1-f">--</span> mol/hr</td></tr>
+            <tr><td>z₁ (EtOH)</td><td class="highlight"><span id="sc1-z1">--</span></td></tr>
+            <tr><td>z₂ (H₂O)</td><td class="highlight"><span id="sc1-z2">--</span></td></tr>
+            <tr><td>z₃ (CyHex)</td><td class="highlight"><span id="sc1-z3">--</span></td></tr>
+          </tbody>
+        </table>
+
+        <table class="calc-table" style="margin-top:0;">
+          <thead><tr><th colspan="2">Target Product Profile</th></tr></thead>
+          <tbody>
+            <tr><td>Distillate D</td><td class="highlight"><span id="sc1-d">--</span> mol/hr</td></tr>
+            <tr><td>xD₁ (EtOH)</td><td class="highlight"><span id="sc1-xd1">--</span></td></tr>
+            <tr><td>xD₂ (H₂O)</td><td class="highlight"><span id="sc1-xd2">--</span></td></tr>
+            <tr><td>xB Target (EtOH)</td><td class="highlight"><span id="sc1-xb">--</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">STEP 2 — Antoine Equation (Saturation Vapor Pressures)</div>
+      <div class="eq-box">
+        <div class="eq-label">EQUATION</div>
+        log₁₀(Pᵢˢᵃᵗ) = Aᵢ - Bᵢ / (Cᵢ + T)
+      </div>
+      <table class="calc-table">
+        <thead>
+          <tr><th>COMPONENT</th><th>A</th><th>B/(C+T)</th><th>EXPONENT</th><th>Pˢᵃᵗ (mmHg)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--ethanol);font-weight:bold;">Ethanol</td>
+            <td>8.20417</td>
+            <td>1642.89 / (230.3 + <span class="calc-t-val">--</span>) = <span id="sc2-term1">--</span></td>
+            <td>8.20417 - <span id="sc2-term1-copy">--</span> = <span style="font-weight:bold;" id="sc2-exp1">--</span></td>
+            <td class="highlight"><span id="sc2-psat1">--</span> mmHg</td>
+          </tr>
+          <tr>
+            <td style="color:var(--water);font-weight:bold;">Water</td>
+            <td>8.07131</td>
+            <td>1730.63 / (233.426 + <span class="calc-t-val">--</span>) = <span id="sc2-term2">--</span></td>
+            <td>8.07131 - <span id="sc2-term2-copy">--</span> = <span style="font-weight:bold;" id="sc2-exp2">--</span></td>
+            <td class="highlight"><span id="sc2-psat2">--</span> mmHg</td>
+          </tr>
+          <tr>
+            <td style="color:var(--cyclohexane);font-weight:bold;">Cyclohexane</td>
+            <td>6.84930</td>
+            <td>1203.835 / (222.65 + <span class="calc-t-val">--</span>) = <span id="sc2-term3">--</span></td>
+            <td>6.84930 - <span id="sc2-term3-copy">--</span> = <span style="font-weight:bold;" id="sc2-exp3">--</span></td>
+            <td class="highlight"><span id="sc2-psat3">--</span> mmHg</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+          <div class="card-title">STEP 3 — Activity Coefficients (NRTL)</div>
+          <div class="eq-box">
+            <div class="eq-label">EVALUATION METHOD</div>
+            Rigorous NRTL computation using liquid feed compositions (zᵢ) and T = <span class="calc-t-val">--</span> °C.
+          </div>
+          <table class="calc-table">
+            <thead><tr><th>COMPONENT</th><th>Γᵢ (NRTL Result)</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--ethanol);font-weight:bold;">Ethanol</td><td class="highlight"><span id="sc3-g1">--</span></td></tr>
+              <tr><td style="color:var(--water);font-weight:bold;">Water</td><td class="highlight"><span id="sc3-g2">--</span></td></tr>
+              <tr><td style="color:var(--cyclohexane);font-weight:bold;">Cyclohexane</td><td class="highlight"><span id="sc3-g3">--</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title">STEP 5 — Relative Volatility (α)</div>
+          <div class="eq-box">
+            <div class="eq-label">EQUATION (EtOH to H₂O Base)</div>
+            α₁₂ = (γ₁ · P₁ˢᵃᵗ) / (γ₂ · P₂ˢᵃᵗ)
+          </div>
+          <div class="eq-box" style="margin-top:12px;">
+            <div class="eq-label">COMPUTATION</div>
+            α₁₂ = (<span id="sc5-g1">--</span> · <span id="sc5-p1">--</span>) / (<span id="sc5-g2">--</span> · <span id="sc5-p2">--</span>)<br><br>
+            α₁₂ = <span style="font-size:18px; color:var(--accent); font-weight:bold;" id="sc5-alpha">--</span>
+          </div>
+        </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">STEP 4 — VLE Calculation (Modified Raoult's Law)</div>
+      <div class="eq-box">
+        <div class="eq-label">EQUATION</div>
+        yᵢ = xᵢ · γᵢ · Pᵢˢᵃᵗ / P &nbsp;&nbsp;(unnormalized) &nbsp;→&nbsp; normalize: yᵢ = yᵢ / Σyᵢ
+      </div>
+      <table class="calc-table">
+        <thead>
+          <tr><th>COMPONENT</th><th>zᵢ</th><th>γᵢ</th><th>Pᵢˢᵃᵗ</th><th>RAW CALCULATION</th><th>yᵢ (NORMALIZED)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--ethanol);font-weight:bold;">Ethanol</td>
+            <td><span id="sc4-z1">--</span></td><td><span id="sc4-g1">--</span></td><td><span id="sc4-p1">--</span></td>
+            <td><span id="sc4-raw1">--</span></td><td class="highlight"><span id="sc4-y1">--</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--water);font-weight:bold;">Water</td>
+            <td><span id="sc4-z2">--</span></td><td><span id="sc4-g2">--</span></td><td><span id="sc4-p2">--</span></td>
+            <td><span id="sc4-raw2">--</span></td><td class="highlight"><span id="sc4-y2">--</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--cyclohexane);font-weight:bold;">Cyclohexane</td>
+            <td><span id="sc4-z3">--</span></td><td><span id="sc4-g3">--</span></td><td><span id="sc4-p3">--</span></td>
+            <td><span id="sc4-raw3">--</span></td><td class="highlight"><span id="sc4-y3">--</span></td>
+          </tr>
+          <tr>
+            <td colspan="4" style="text-align:right; font-weight:bold; color:var(--text-dim);">Sum Σ</td>
+            <td><span id="sc4-sum">--</span></td>
+            <td class="highlight">1.0000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">STEP 6 — Mass Balance</div>
+      <div class="eq-box">
+        <div class="eq-label">OVERALL (B)</div>
+        B = F - D = <span id="sc6-F">--</span> - <span id="sc6-D">--</span> = <span style="font-weight:bold; color:var(--text)" id="sc6-B">--</span> mol/hr
+      </div>
+      <div class="eq-box">
+        <div class="eq-label">COMPONENT (ETHANOL - LIGHT KEY)</div>
+        F·z₁ = D·xD₁ + B·xB₁ &nbsp;→&nbsp; xB₁ = (F·z₁ - D·xD₁) / B = (<span id="sc6-f1">--</span>×<span id="sc6-z1">--</span> - <span id="sc6-d1">--</span>×<span id="sc6-xd1">--</span>) / <span id="sc6-b1">--</span> = <span style="font-weight:bold;" id="sc6-xb1">--</span>
+      </div>
+      <div class="eq-box">
+        <div class="eq-label">COMPONENT (WATER - HEAVY KEY)</div>
+        xB₂ = (F·z₂ - D·xD₂) / B = (<span id="sc6-f2">--</span>×<span id="sc6-z2">--</span> - <span id="sc6-d2">--</span>×<span id="sc6-xd2">--</span>) / <span id="sc6-b2">--</span> = <span style="font-weight:bold;" id="sc6-xb2">--</span>
+      </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+          <div class="card-title">STEP 7 — Fenske Eq. (Nmin)</div>
+          <div class="eq-box">
+            <div class="eq-label">EQUATION (Light Key Ratio)</div>
+            Nmin = ln[(xD/(1-xD)) / (xB/(1-xB))] / ln(α)
+          </div>
+          <div class="eq-box" style="margin-top:12px;">
+            <div class="eq-label">COMPUTATION</div>
+            Ratio_D = <span id="sc7-xd">--</span> / (1 - <span id="sc7-xd-2">--</span>) = <span id="sc7-rD">--</span><br>
+            Ratio_B = <span id="sc7-xb">--</span> / (1 - <span id="sc7-xb-2">--</span>) = <span id="sc7-rB">--</span><br><br>
+            Nmin = ln(<span id="sc7-rD2">--</span> / <span id="sc7-rB2">--</span>) / ln(<span id="sc7-alpha">--</span>)<br>
+            Nmin = <span style="color:var(--accent4);font-weight:bold;font-size:16px;" id="sc7-nmin">--</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">STEP 8 — Underwood Eq. (Rmin)</div>
+          <div class="eq-box">
+            <div class="eq-label">ROOT FINDING (θ)</div>
+            Solve for θ: Σ [αᵢ·zᵢ / (αᵢ - θ)] = 1 - q<br>
+            Numerical Root Result: <strong>θ = <span id="sc8-theta">--</span></strong>
+          </div>
+          <div class="eq-box" style="margin-top:12px;">
+            <div class="eq-label">MINIMUM REFLUX COMPUTATION</div>
+            Rmin = Σ [αᵢ·xDᵢ / (αᵢ - θ)] - 1<br><br>
+            Rmin = <span id="sc8-sum">--</span> - 1<br>
+            Rmin = <span style="color:var(--accent2);font-weight:bold;font-size:16px;" id="sc8-rmin">--</span>
+          </div>
+        </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">STEP 9 — Gilliland Correlation (Actual Stages N)</div>
+      <div class="eq-box">
+        <div class="eq-label">EDULJEE ANALYTICAL EQUATION</div>
+        X = (R - Rmin) / (R + 1)<br>
+        Y = 1 - exp[ ((1 + 54.4·X) / (11 + 117.2·X)) · ((X - 1) / X^0.5) ]<br>
+        N = (Nmin + Y) / (1 - Y)
+      </div>
+      <table class="calc-table">
+        <tbody>
+          <tr><td style="width:30%"><strong>X (Correlation Absissa)</strong></td><td>(<span id="sc9-r">--</span> - <span id="sc9-rmin">--</span>) / (<span id="sc9-r2">--</span> + 1) = <span style="font-weight:bold;color:var(--text)" id="sc9-X">--</span></td></tr>
+          <tr><td><strong>Y (Correlation Ordinate)</strong></td><td>Resulting analytical evaluation = <span style="font-weight:bold;color:var(--text)" id="sc9-Y">--</span></td></tr>
+          <tr><td><strong>Actual Stages (N)</strong></td><td>(<span id="sc9-nmin">--</span> + <span id="sc9-y2">--</span>) / (1 - <span id="sc9-y3">--</span>) = <span style="color:var(--accent3);font-weight:bold;font-size:18px;" id="sc9-N">--</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="color:var(--accent3);">STEP 10 — SIMULATION VS MANUAL VERIFICATION</div>
+      <table class="calc-table">
+        <thead>
+          <tr>
+            <th style="color:var(--accent)">QUANTITY</th>
+            <th style="color:var(--accent)">DERIVATION CALCULATION</th>
+            <th style="color:var(--accent)">SIMULATOR OUTPUT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--text-dim);">Pˢᵃᵗ Ethanol</td>
+            <td style="color:var(--text-dim);" id="v-p1-calc">--</td>
+            <td style="color:var(--text-dim);" id="v-p1-sim">--</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-dim);">y₁ Ethanol (vapor)</td>
+            <td style="color:var(--text-dim);" id="v-y1-calc">--</td>
+            <td style="color:var(--text-dim);" id="v-y1-sim">--</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-dim);">Bottoms Flow (B)</td>
+            <td style="color:var(--text-dim);" id="v-b-calc">--</td>
+            <td style="color:var(--text-dim);" id="v-b-sim">--</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-dim);">Nmin (Fenske)</td>
+            <td style="color:var(--text-dim);" id="v-nmin-calc">--</td>
+            <td style="color:var(--text-dim);" id="v-nmin-sim">--</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-dim);">Rmin (Underwood)</td>
+            <td style="color:var(--text-dim);" id="v-rmin-calc">--</td>
+            <td style="color:var(--text-dim);" id="v-rmin-sim">--</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-dim);">Actual Stages (N)</td>
+            <td style="color:var(--text-dim);" id="v-n-calc">--</td>
+            <td style="color:var(--text-dim);" id="v-n-sim">--</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+// Safe DOM access wrappers to prevent silent null-reference crashes
+function safeGetVal(id, def) {
+    const el = document.getElementById(id);
+    if (!el) return def;
+    const v = parseFloat(el.value);
+    return isNaN(v) ? def : v;
+}
+function safeSetText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = text; // Allow injection of HTML formats like '+' if needed
+}
+function safeSetVal(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+}
+function safeSetClassElementsText(className, text) {
+    const els = document.getElementsByClassName(className);
+    for(let i=0; i<els.length; i++){ els[i].innerText = text; }
+}
+
+// ════════════════════════════════════════
+// CORE THERMODYNAMIC ENGINE (RIGOROUS)
+// ════════════════════════════════════════
+const ANTOINE = {
+  A: [8.20417, 8.07131, 6.84930], // 0:EtOH, 1:Water, 2:CyHex
+  B: [1642.89, 1730.63, 1203.835],
+  C: [230.300, 233.426, 222.650]
+};
+
+function antoine(T, i) {
+  const denom = ANTOINE.C[i] + T;
+  if (Math.abs(denom) < 1e-5) return 0; 
+  const exp = ANTOINE.A[i] - ANTOINE.B[i] / denom;
+  return Math.pow(10, Math.min(exp, 20));
+}
+
+function getPsat(T) {
+  return [0,1,2].map(i => antoine(T,i));
+}
+
+function nrtl_gamma(x, T) {
+    const x_safe = x.map(v => Math.max(v, 1e-10));
+    const sumX = x_safe.reduce((a,b)=>a+b,0);
+    const xi = x_safe.map(v => v/sumX);
+
+    const tau = [
+        [0, 3.4578, 1.5],       
+        [-0.8009, 0, 7.5],      
+        [1.37, 5.5, 0]          
+    ];
+    const alpha_nrtl = [
+        [0, 0.3, 0.3],
+        [0.3, 0, 0.2],
+        [0.3, 0.2, 0]
+    ];
+
+    const G = [[0,0,0],[0,0,0],[0,0,0]];
+    for(let i=0; i<3; i++) {
+        for(let j=0; j<3; j++) {
+            G[i][j] = Math.exp(-alpha_nrtl[i][j] * tau[i][j]);
+        }
+    }
+
+    let gamma = [1,1,1];
+    for(let i=0; i<3; i++) {
+        let term1_num = 0, term1_den = 0;
+        for(let j=0; j<3; j++) {
+            term1_num += xi[j] * tau[j][i] * G[j][i];
+            term1_den += xi[j] * G[j][i];
+        }
+        
+        let term2 = 0;
+        for(let j=0; j<3; j++) {
+            let num2 = xi[j] * G[i][j];
+            let den2 = 0, sub_num2 = 0;
+            for(let k=0; k<3; k++) {
+                den2 += xi[k] * G[k][j];
+                sub_num2 += xi[k] * tau[k][j] * G[k][j];
+            }
+            term2 += (num2 / den2) * (tau[i][j] - (sub_num2 / den2));
+        }
+        gamma[i] = Math.exp((term1_num / term1_den) + term2);
+    }
+    return gamma;
+}
+
+function getBubblePoint(x, P) {
+    let T_low = 40, T_high = 120;
+    for(let i=0; i<30; i++) {
+        let T_mid = (T_low + T_high) / 2;
+        let gammas = nrtl_gamma(x, T_mid);
+        let p = getPsat(T_mid);
+        let P_calc = x[0]*gammas[0]*p[0] + x[1]*gammas[1]*p[1] + x[2]*gammas[2]*p[2];
+        if(P_calc > P) T_high = T_mid; else T_low = T_mid;
+    }
+    return (T_low + T_high) / 2;
+}
+
+function vle(x, gamma, Psat, P) {
+  const raw = x.map((xi,i) => xi * gamma[i] * Psat[i] / P);
+  return normalize(raw);
+}
+
+function normalize(arr) {
+  const s = arr.reduce((a,b)=>a+b,0);
+  if (s === 0 || isNaN(s)) return arr.map(()=>1/arr.length);
+  return arr.map(v=>v/s);
+}
+
+// ════════════════════════════════════════
+// THERMODYNAMIC DECANTER (LLE) ENGINE
+// ════════════════════════════════════════
+function decanter_split(z) {
+    if(z[2] < 0.01 || z[1] < 0.01) return {org: z, aq: z, phase: 1};
+    const T_dec = 40; 
+    const x_aq_est = [0.05, 0.94, 0.01]; 
+    const x_org_est = [0.05, 0.01, 0.94]; 
+    const gammas_aq = nrtl_gamma(x_aq_est, T_dec);
+    const gammas_org = nrtl_gamma(x_org_est, T_dec);
+    const K = [
+        gammas_aq[0] / gammas_org[0],
+        gammas_aq[1] / gammas_org[1],
+        gammas_aq[2] / gammas_org[2]
+    ];
+    let phi_low = 0.0001, phi_high = 0.9999, phi = 0.5;
+    for(let i=0; i<40; i++) {
+        phi = (phi_low + phi_high)/2;
+        let sum_rr = 0;
+        for(let j=0; j<3; j++) sum_rr += (z[j]*(K[j]-1)) / (1 + phi*(K[j]-1));
+        if(sum_rr > 0) phi_low = phi; else phi_high = phi;
+    }
+    let x_aq = [0,0,0], x_org = [0,0,0];
+    for(let j=0; j<3; j++) {
+        x_aq[j] = z[j] / (1 + phi*(K[j]-1));
+        x_org[j] = K[j] * x_aq[j];
+    }
+    return {org: normalize(x_org), aq: normalize(x_aq), phi: phi, phase: 2};
+}
+
+// ════════════════════════════════════════
+// DESIGN ENGINE (FUG)
+// ════════════════════════════════════════
+
+function fenske(xD, xB, alpha) {
+  xD = Math.min(0.9999, Math.max(0.0001, xD));
+  xB = Math.min(0.9999, Math.max(0.0001, xB));
+  alpha = Math.max(1.05, Math.abs(alpha)); 
+  const num = Math.log((xD/(1-xD)) / (xB/(1-xB)));
+  const den = Math.log(alpha);
+  const Nmin = num / den;
+  return Math.max(1, isNaN(Nmin) ? 10 : Nmin); 
+}
+
+function underwood_root(xF, alpha_arr, q) {
+    let low = 1.0001; 
+    let high = alpha_arr[0] - 0.0001; 
+    if (high <= low) high = low + 1.0; 
+    let theta = (low+high)/2;
+    for(let i=0; i<40; i++) {
+        theta = (low+high)/2;
+        let f = 0;
+        for(let j=0; j<alpha_arr.length; j++) {
+            let den = alpha_arr[j] - theta;
+            if(Math.abs(den) < 1e-5) den = 1e-5; 
+            f += (alpha_arr[j]*xF[j]) / den;
+        }
+        f -= (1 - q); 
+        if(f > 0) {
+            high = theta;
+        } else {
+            low = theta; 
+        }
+    }
+    return isNaN(theta) ? 1.1 : theta; 
+}
+
+function underwood_rmin(xD, alpha_arr, theta) {
+    if(isNaN(theta)) return 0.5; 
+    let rmin_plus_1 = 0;
+    for(let i=0; i<alpha_arr.length; i++) {
+        let den = alpha_arr[i] - theta;
+        if (Math.abs(den) < 1e-5) den = 1e-5;
+        rmin_plus_1 += (alpha_arr[i]*xD[i]) / den;
+    }
+    let rmin = rmin_plus_1 - 1;
+    return Math.max(0.1, isNaN(rmin) ? 0.5 : rmin); 
+}
+
+function gilliland(Nmin, Rmin, R) {
+  if (isNaN(Nmin) || Nmin <= 0) Nmin = 5; 
+  if (isNaN(Rmin) || Rmin <= 0) Rmin = 0.5; 
+  if (R <= Rmin) return Nmin * 5; 
+
+  const X = (R - Rmin) / (R + 1);
+  const safeX = Math.max(1e-10, Math.min(0.9999, X)); 
+  const exp_term = ((1 + 54.4 * safeX) / (11 + 117.2 * safeX)) * ((safeX - 1) / Math.sqrt(safeX));
+  const Y = 1 - Math.exp(exp_term);
+  const N = (Nmin + Y) / (1 - Y);
+  return Math.max(Nmin, N); 
+}
+
+// ════════════════════════════════════════
+// NRTL-CORRECTED DESIGN (αeff via bubble-point T at D and B)
+// ════════════════════════════════════════
+function nrtlDesign(lk_xD, lk_xB, xD_vec, nx_feed, alpha_arr_feed, q, R, P_sys) {
+  // --- distillate bubble point (binary EtOH/H2O, no cyclohexane at top) ---
+  const xD_bp = [Math.min(0.9999, Math.max(0.0001, lk_xD)),
+                 Math.max(0.0001, 1 - Math.min(0.9999, lk_xD)), 0];
+  const T_D = getBubblePoint(xD_bp, P_sys);
+  const gD  = nrtl_gamma(xD_bp, T_D);
+  const pD  = getPsat(T_D);
+  const alpha_D = Math.max(1.001, (gD[0]*pD[0]) / (gD[1]*pD[1]));
+
+  // --- bottoms bubble point (mostly water) ---
+  const xB_bp = [Math.min(0.5, Math.max(0.0001, lk_xB)),
+                 Math.max(0.0001, 1 - Math.min(0.5, lk_xB)), 0];
+  const T_B = getBubblePoint(xB_bp, P_sys);
+  const gB  = nrtl_gamma(xB_bp, T_B);
+  const pB  = getPsat(T_B);
+  const alpha_B = Math.max(1.001, (gB[0]*pB[0]) / (gB[1]*pB[1]));
+
+  // --- geometric mean effective α ---
+  const alpha_eff = Math.sqrt(alpha_D * alpha_B);
+
+  // --- rebuild alpha_arr with alpha_eff as base ---
+  const alpha_arr_eff = [alpha_eff, 1.0, alpha_arr_feed[2]];
+
+  // --- Fenske with α_eff ---
+  const Nmin_nrtl = fenske(lk_xD, lk_xB, alpha_eff);
+
+  // --- Underwood with α_eff ---
+  const theta_nrtl = underwood_root(nx_feed, alpha_arr_eff, q);
+  const Rmin_nrtl  = underwood_rmin(xD_vec, alpha_arr_eff, theta_nrtl);
+
+  // --- Gilliland ---
+  const N_nrtl = gilliland(Nmin_nrtl, Rmin_nrtl, R);
+
+  return { alpha_D, alpha_B, alpha_eff, Nmin: Nmin_nrtl, Rmin: Rmin_nrtl, N: N_nrtl, T_D, T_B };
+}
+
+let state = {
+  T: 78, P: 760, R: 3.0,
+  x: [0.4, 0.5, 0.1],
+  F: 100, D: 40, q: 1.0,
+  xD: [0.55, 0.25, 0.20],
+  fxB: 0.010
+};
+
+let eqPressure = 760;
+let chartSens, chartYX, chartPsat, chartMcCabe;
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  let target = document.getElementById('tab-'+name);
+  if(target) target.classList.add('active');
+  if(event && event.target) event.target.classList.add('active');
+
+  try {
+      if(name==='sensitivity') { setTimeout(()=>runSensitivity(),50); }
+      if(name==='equilibrium') { setTimeout(()=>{ drawYX(eqPressure); drawPsat(); drawMcCabe(); },50); }
+  } catch (e) { console.error(e); }
+}
+
+function updateVal(key, val, unit) {
+  state[key] = parseFloat(val);
+  const fmt = key==='R' ? parseFloat(val).toFixed(1) : val;
+  safeSetText('val-'+key, fmt + ' ' + unit);
+}
+
+function updateComp(key, val) {
+  const i = {'x1':0,'x2':1,'x3':2}[key];
+  state.x[i] = parseFloat(val);
+  safeSetText('val-'+key, parseFloat(val).toFixed(3));
+  
+  const sum = state.x.reduce((a,b)=>a+b,0);
+  const warn = document.getElementById('comp-warning');
+  if(warn) warn.className = 'warning' + (Math.abs(sum-1)>0.05?' show':'');
+}
+
+// ════════════════════════════════════════
+// MAIN SIMULATION COUPLING
+// ════════════════════════════════════════
+function runSim() {
+  try {
+      state.T = safeGetVal('sl-T', 78);
+      state.P = safeGetVal('sl-P', 760);
+      state.R = safeGetVal('sl-R', 3.0);
+      state.F = safeGetVal('inp-F', 100);
+      state.q = safeGetVal('inp-q', 1.0);
+      
+      let raw_xD = [safeGetVal('inp-xD1', 0.55), safeGetVal('inp-xD2', 0.25), 0.20];
+      state.xD = normalize(raw_xD);
+      state.fxB = safeGetVal('inp-fxB', 0.010);
+      
+      const nx = normalize(state.x);
+
+      const lk_z = nx[0];
+      const lk_xD = state.xD[0];
+      const lk_xB = state.fxB;
+      
+      let D_calc = state.F * (lk_z - lk_xB) / (lk_xD - lk_xB + 1e-5);
+      D_calc = Math.max(1e-2, Math.min(state.F - 1e-2, D_calc));
+      state.D = D_calc;
+      
+      safeSetText('res-D', state.D.toFixed(1));
+      const B = Math.max(0, state.F - state.D);
+
+      const Psat = getPsat(state.T);
+      const gammas = nrtl_gamma(nx, state.T);
+      const y = vle(nx, gammas, Psat, state.P);
+      
+      let alpha_12 = (gammas[0]*Psat[0]) / (gammas[1]*Psat[1]);
+      alpha_12 = Math.max(1.05, alpha_12); 
+      
+      const alpha_arr = [alpha_12, 1.0, (gammas[2]*Psat[2]) / (gammas[1]*Psat[1])];
+      const lk_ratio_D = state.xD[0] / (state.xD[0] + state.xD[1] + 1e-10); 
+      
+      const Nmin = fenske(lk_ratio_D, state.fxB, alpha_12);
+      const theta = underwood_root(nx, alpha_arr, state.q);
+      const Rmin = underwood_rmin(state.xD, alpha_arr, theta);
+      const N = gilliland(Nmin, Rmin, state.R);
+      const dec = decanter_split(y);
+
+      // UI Outputs
+      safeSetText('res-y1', y[0].toFixed(4));
+      safeSetText('res-y2', y[1].toFixed(4));
+      safeSetText('res-y3', y[2].toFixed(4));
+      safeSetText('res-B', B.toFixed(1));
+      
+      safeSetVal('calc-alpha', alpha_12.toFixed(3));
+      safeSetVal('calc-theta', isNaN(theta)?'Err':theta.toFixed(3));
+      
+      safeSetText('res-Nmin', isNaN(Nmin)?'N/A':Nmin.toFixed(2));
+      safeSetText('res-Rmin', isNaN(Rmin)?'N/A':Rmin.toFixed(3));
+      
+      const elStages = document.getElementById('res-stages');
+      const elUnit = elStages ? elStages.nextElementSibling : null;
+      
+      if(elStages) {
+          if (state.R <= Rmin) {
+              elStages.innerText = Math.ceil(N) + "+";
+              elStages.style.color = "var(--accent4)";
+              if (elUnit) elUnit.innerText = "Low Reflux (High N)";
+          } else if (isNaN(N) || N < 0) {
+              elStages.innerText = "Error";
+              elStages.style.color = "var(--red)";
+              if (elUnit) elUnit.innerText = "Check params";
+          } else {
+              elStages.innerText = Math.ceil(N);
+              elStages.style.color = "var(--accent3)";
+              if (elUnit) elUnit.innerText = "via Eduljee/Gilliland";
+          }
+      }
+
+      safeSetText('lle-org-cyc', dec.org[2].toFixed(3));
+      safeSetText('lle-org-eth', dec.org[0].toFixed(3));
+      safeSetText('lle-aq-wat', dec.aq[1].toFixed(3));
+      safeSetText('lle-aq-eth', dec.aq[0].toFixed(3));
+
+      // ── NRTL vs Ideal comparison panel ──
+      const lk_ratio_D2 = state.xD[0] / (state.xD[0] + state.xD[1] + 1e-10);
+      const nd = nrtlDesign(lk_ratio_D2, state.fxB, state.xD, nx, alpha_arr, state.q, state.R, state.P);
+
+      // Ideal column
+      safeSetText('cmp-ideal-alpha', alpha_12.toFixed(4));
+      safeSetText('cmp-ideal-nmin',  Nmin.toFixed(2));
+      safeSetText('cmp-ideal-rmin',  Rmin.toFixed(3));
+      const ideal_N_ceil = (state.R <= Rmin) ? Math.ceil(N)+ "+" : (isNaN(N)||N<0 ? "Err" : Math.ceil(N));
+      safeSetText('cmp-ideal-N', ideal_N_ceil);
+
+      // NRTL column
+      safeSetText('cmp-nrtl-alphaD',   nd.alpha_D.toFixed(4));
+      safeSetText('cmp-nrtl-alphaB',   nd.alpha_B.toFixed(4));
+      safeSetText('cmp-nrtl-alphaEff', nd.alpha_eff.toFixed(4));
+      safeSetText('cmp-nrtl-nmin',     nd.Nmin.toFixed(2));
+      safeSetText('cmp-nrtl-rmin',     nd.Rmin.toFixed(3));
+      const nrtl_N_ceil = (state.R <= nd.Rmin) ? Math.ceil(nd.N)+ "+" : (isNaN(nd.N)||nd.N<0 ? "Err" : Math.ceil(nd.N));
+      safeSetText('cmp-nrtl-N', nrtl_N_ceil);
+
+      // Synchronize Sample Calculations Live
+      updateCalcPage(Psat, gammas, y, alpha_12, alpha_arr, Nmin, theta, Rmin, N);
+
+  } catch (err) {
+      console.error("Simulation Engine Error:", err);
+  }
+}
+
+// ════════════════════════════════════════
+// SAMPLE CALC PAGE SYNCHRONIZATION
+// ════════════════════════════════════════
+function updateCalcPage(Psat, gammas, y, alpha, alpha_arr, Nmin, theta, Rmin, N) {
+  try {
+      const T = state.T; const P = state.P; const R = state.R; const F = state.F; 
+      const D = state.D; const B = Math.max(0, F - D); const q = state.q;
+      const z = normalize(state.x); const xD = state.xD; const xB_target = state.fxB;
+
+      // STEP 1 - INPUTS
+      safeSetText('sc1-t', T.toFixed(1));
+      safeSetClassElementsText('calc-t-val', T.toFixed(1));
+      safeSetText('sc1-p', P.toFixed(1));
+      safeSetText('sc1-q', q.toFixed(2));
+      safeSetText('sc1-r', R.toFixed(2));
+      
+      safeSetText('sc1-f', F.toFixed(1));
+      safeSetText('sc1-z1', z[0].toFixed(4));
+      safeSetText('sc1-z2', z[1].toFixed(4));
+      safeSetText('sc1-z3', z[2].toFixed(4));
+      
+      safeSetText('sc1-d', D.toFixed(1));
+      safeSetText('sc1-xd1', xD[0].toFixed(4));
+      safeSetText('sc1-xd2', xD[1].toFixed(4));
+      safeSetText('sc1-xb', xB_target.toFixed(4));
+
+      // STEP 2 - ANTOINE
+      const b_div_c_t = ANTOINE.B.map((b,i) => b / (ANTOINE.C[i] + T));
+      const exp_terms = ANTOINE.A.map((a,i) => a - b_div_c_t[i]);
+      
+      safeSetText('sc2-term1', b_div_c_t[0].toFixed(3)); safeSetText('sc2-term1-copy', b_div_c_t[0].toFixed(3));
+      safeSetText('sc2-term2', b_div_c_t[1].toFixed(3)); safeSetText('sc2-term2-copy', b_div_c_t[1].toFixed(3));
+      safeSetText('sc2-term3', b_div_c_t[2].toFixed(3)); safeSetText('sc2-term3-copy', b_div_c_t[2].toFixed(3));
+      
+      safeSetText('sc2-exp1', exp_terms[0].toFixed(3)); safeSetText('sc2-psat1', Psat[0].toFixed(1));
+      safeSetText('sc2-exp2', exp_terms[1].toFixed(3)); safeSetText('sc2-psat2', Psat[1].toFixed(1));
+      safeSetText('sc2-exp3', exp_terms[2].toFixed(3)); safeSetText('sc2-psat3', Psat[2].toFixed(1));
+
+      // STEP 3 - NRTL
+      safeSetText('sc3-g1', gammas[0].toFixed(4));
+      safeSetText('sc3-g2', gammas[1].toFixed(4));
+      safeSetText('sc3-g3', gammas[2].toFixed(4));
+
+      // STEP 4 - VLE
+      const raw = z.map((zi,i) => zi * gammas[i] * Psat[i] / P);
+      const sumRaw = raw.reduce((a,b)=>a+b,0);
+      safeSetText('sc4-z1', z[0].toFixed(4)); safeSetText('sc4-g1', gammas[0].toFixed(4)); safeSetText('sc4-p1', Psat[0].toFixed(1));
+      safeSetText('sc4-z2', z[1].toFixed(4)); safeSetText('sc4-g2', gammas[1].toFixed(4)); safeSetText('sc4-p2', Psat[1].toFixed(1));
+      safeSetText('sc4-z3', z[2].toFixed(4)); safeSetText('sc4-g3', gammas[2].toFixed(4)); safeSetText('sc4-p3', Psat[2].toFixed(1));
+      
+      safeSetText('sc4-raw1', raw[0].toFixed(4)); safeSetText('sc4-y1', y[0].toFixed(4));
+      safeSetText('sc4-raw2', raw[1].toFixed(4)); safeSetText('sc4-y2', y[1].toFixed(4));
+      safeSetText('sc4-raw3', raw[2].toFixed(4)); safeSetText('sc4-y3', y[2].toFixed(4));
+      safeSetText('sc4-sum', sumRaw.toFixed(4));
+
+      // STEP 5 - RELATIVE VOLATILITY
+      safeSetText('sc5-g1', gammas[0].toFixed(4)); safeSetText('sc5-p1', Psat[0].toFixed(1));
+      safeSetText('sc5-g2', gammas[1].toFixed(4)); safeSetText('sc5-p2', Psat[1].toFixed(1));
+      safeSetText('sc5-alpha', alpha.toFixed(4));
+
+      // STEP 6 - MASS BALANCE
+      const xB = z.map((zi,i) => (F*zi - D*xD[i])/B);
+      safeSetText('sc6-F', F.toFixed(1)); safeSetText('sc6-D', D.toFixed(1)); safeSetText('sc6-B', B.toFixed(1));
+      
+      safeSetText('sc6-f1', F.toFixed(1)); safeSetText('sc6-z1', z[0].toFixed(4)); 
+      safeSetText('sc6-d1', D.toFixed(1)); safeSetText('sc6-xd1', xD[0].toFixed(4)); 
+      safeSetText('sc6-b1', B.toFixed(1)); safeSetText('sc6-xb1', xB[0].toFixed(4));
+
+      safeSetText('sc6-f2', F.toFixed(1)); safeSetText('sc6-z2', z[1].toFixed(4)); 
+      safeSetText('sc6-d2', D.toFixed(1)); safeSetText('sc6-xd2', xD[1].toFixed(4)); 
+      safeSetText('sc6-b2', B.toFixed(1)); safeSetText('sc6-xb2', xB[1].toFixed(4));
+
+      // STEP 7 - FENSKE
+      const lkD = xD[0] / (xD[0] + xD[1] + 1e-10);
+      const ratioD = lkD / (1 - lkD);
+      const ratioB = xB_target / (1 - xB_target);
+      safeSetText('sc7-xd', lkD.toFixed(4)); safeSetText('sc7-xd-2', lkD.toFixed(4)); safeSetText('sc7-rD', ratioD.toFixed(4));
+      safeSetText('sc7-xb', xB_target.toFixed(4)); safeSetText('sc7-xb-2', xB_target.toFixed(4)); safeSetText('sc7-rB', ratioB.toFixed(4));
+      safeSetText('sc7-rD2', ratioD.toFixed(4)); safeSetText('sc7-rB2', ratioB.toFixed(4)); safeSetText('sc7-alpha', alpha.toFixed(4));
+      safeSetText('sc7-nmin', Nmin.toFixed(2));
+
+      // STEP 8 - UNDERWOOD
+      let underwood_sum = 0;
+      for(let i=0; i<alpha_arr.length; i++) {
+        underwood_sum += (alpha_arr[i]*xD[i]) / (alpha_arr[i] - theta);
+      }
+      safeSetText('sc8-theta', theta.toFixed(4));
+      safeSetText('sc8-sum', underwood_sum.toFixed(4));
+      safeSetText('sc8-rmin', Rmin.toFixed(3));
+
+      // STEP 9 - GILLILAND
+      const X_val = Math.max(1e-10, Math.min(0.9999, (R - Rmin)/(R + 1)));
+      const exp_t = ((1 + 54.4 * X_val) / (11 + 117.2 * X_val)) * ((X_val - 1) / Math.sqrt(X_val));
+      const Y_val = 1 - Math.exp(exp_t);
+      
+      safeSetText('sc9-r', R.toFixed(2)); safeSetText('sc9-rmin', Rmin.toFixed(3)); safeSetText('sc9-r2', R.toFixed(2));
+      safeSetText('sc9-X', X_val.toFixed(4));
+      safeSetText('sc9-Y', Y_val.toFixed(4));
+      safeSetText('sc9-nmin', Nmin.toFixed(2)); safeSetText('sc9-y2', Y_val.toFixed(4)); safeSetText('sc9-y3', Y_val.toFixed(4));
+      
+      if (R <= Rmin) {
+          safeSetText('sc9-N', Math.ceil(N) + "+ (Low Reflux Fallback)");
+      } else {
+          safeSetText('sc9-N', (isNaN(N) || N < 0) ? 'Error' : Math.ceil(N));
+      }
+
+      // STEP 10 - VERIFICATION
+      safeSetText('v-p1-calc', Psat[0].toFixed(1) + " mmHg"); safeSetText('v-p1-sim', Psat[0].toFixed(1) + " mmHg");
+      safeSetText('v-y1-calc', y[0].toFixed(4)); safeSetText('v-y1-sim', y[0].toFixed(4));
+      safeSetText('v-b-calc', B.toFixed(1) + " mol/hr"); safeSetText('v-b-sim', B.toFixed(1) + " mol/hr");
+      safeSetText('v-nmin-calc', Nmin.toFixed(2)); safeSetText('v-nmin-sim', Nmin.toFixed(2));
+      safeSetText('v-rmin-calc', Rmin.toFixed(3)); safeSetText('v-rmin-sim', Rmin.toFixed(3));
+      
+      if (R <= Rmin) {
+        safeSetText('v-n-calc', Math.ceil(N) + "+"); safeSetText('v-n-sim', Math.ceil(N) + "+");
+      } else {
+        safeSetText('v-n-calc', Math.ceil(N)); safeSetText('v-n-sim', Math.ceil(N));
+      }
+
+  } catch(e) { console.error("Calc Update Error:", e); }
+}
+
+// ════════════════════════════════════════
+// SENSITIVITY
+// ════════════════════════════════════════
+function runSensitivity() {
+  try {
+      const min = safeGetVal('sens-min', 60);
+      const max = safeGetVal('sens-max', 90);
+      const steps = Math.max(5, safeGetVal('sens-steps', 16));
+      if(isNaN(min)||isNaN(max)||min>=max) return;
+
+      const data_y1=[];
+      const nx = normalize(state.x);
+
+      for(let i=0;i<steps;i++) {
+        const T = min + (max-min)*i/(steps-1);
+        const Psat = getPsat(T);
+        const gammas = nrtl_gamma(nx, T);
+        const y = vle(nx, gammas, Psat, state.P);
+        if(!isNaN(y[0])) data_y1.push({x: T, y: y[0]});
+      }
+
+      const tbody=document.getElementById('sens-tbody');
+      if(tbody) {
+          tbody.innerHTML='';
+          data_y1.forEach((d)=>{
+            const tr=document.createElement('tr');
+            tr.innerHTML=`<td>${d.x.toFixed(1)}</td><td class="highlight">${d.y.toFixed(4)}</td>`;
+            tbody.appendChild(tr);
+          });
+      }
+
+      const canvas = document.getElementById('chart-sens');
+      if(!canvas) return;
+
+      if(!chartSens) {
+        chartSens=new Chart(canvas.getContext('2d'),{
+          type:'line',
+          data:{datasets:[{label:'Ethanol Vapor-Phase Purity',data:data_y1,borderColor:'#0284c7',backgroundColor:'rgba(2,132,199,0.1)',tension:0.4,fill:true,pointRadius:4,showLine:true}]},
+          options: {
+            responsive:true, maintainAspectRatio:false,
+            scales: {
+              x: {type: 'linear', title:{display:true,text:'Temperature (°C)',color:'#475569'},ticks:{color:'#475569'},grid:{color:'rgba(0,0,0,0.05)'}},
+              y: {type: 'linear', ...yAxis()}
+            }
+          }
+        });
+      } else {
+        chartSens.data.datasets[0].data=data_y1;
+        chartSens.update();
+      }
+  } catch(e) { console.error("Sensitivity Error:", e); }
+}
+
+// ════════════════════════════════════════
+// EQUILIBRIUM CHARTS
+// ════════════════════════════════════════
+function setEqP(P, btn) {
+  eqPressure = P;
+  document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawYX(P);
+}
+
+function drawYX(P) {
+  try {
+      const dataPoints = [];
+      const diagPoints = [];
+      let minDiff = 10.0;
+      let azX = null, azY = null;
+
+      for(let xi=0; xi<=1; xi+=0.02) {
+        let x_calc = Math.max(1e-5, Math.min(0.99999, xi));
+        let x_vec = [x_calc, 1-x_calc, 0];
+        
+        let T_bub = getBubblePoint(x_vec, P);
+        let gammas = nrtl_gamma(x_vec, T_bub);
+        let p = getPsat(T_bub);
+        let y = (x_calc * gammas[0] * p[0]) / P;
+        
+        dataPoints.push({x: xi, y: y});
+        diagPoints.push({x: xi, y: xi});
+
+        if(xi > 0.1 && xi < 0.95) {
+          if(Math.abs(y - xi) < minDiff) {
+             minDiff = Math.abs(y - xi);
+             azX = xi; azY = y;
+          }
+        }
+      }
+
+      if(azX !== null && !isNaN(azX)) {
+          for(let xi=Math.max(0.01, azX-0.03); xi<=Math.min(0.99, azX+0.03); xi+=0.002) {
+              let x_vec = [xi, 1-xi, 0];
+              let T_bub = getBubblePoint(x_vec, P);
+              let gammas = nrtl_gamma(x_vec, T_bub);
+              let p = getPsat(T_bub);
+              let y = (xi * gammas[0] * p[0]) / P;
+              if(Math.abs(y - xi) < minDiff) {
+                  minDiff = Math.abs(y - xi);
+                  azX = xi; azY = y;
+              }
+          }
+      } else { azX = 0; azY = 0; }
+
+      const data = {
+        datasets: [
+          {label:'y-x Equilibrium (NRTL)',data:dataPoints,borderColor:'#0284c7',backgroundColor:'rgba(2,132,199,0.05)',tension:0.3,pointRadius:0,fill:true,showLine:true},
+          {label:'y=x',data:diagPoints,borderColor:'#475569',borderDash:[5,3],pointRadius:0,fill:false,showLine:true},
+          {label:`Azeotrope (x=${azX.toFixed(3)})`,data:[{x:azX,y:azY}],type:'scatter',pointRadius:8,pointStyle:'crossRot',borderColor:'#ef4444',backgroundColor:'#ef4444',showLine:false}
+        ]
+      };
+
+      const canvas = document.getElementById('chart-yx');
+      if(!canvas) return;
+
+      if(!chartYX) {
+        chartYX=new Chart(canvas.getContext('2d'),{
+          type:'line', data,
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            scales:{
+              x:{type:'linear', min:0, max:1, title:{display:true,text:'x₁ (Ethanol Liquid)',color:'#475569'},ticks:{color:'#475569'},grid:{color:'rgba(0,0,0,0.05)'}},
+              y:{type:'linear', min:0, max:1, title:{display:true,text:'y₁ (Ethanol Vapor)',color:'#475569'},ticks:{color:'#475569'},grid:{color:'#e2e8f0'}}
+            }
+          }
+        });
+      } else {
+        chartYX.data=data;
+        chartYX.update();
+      }
+  } catch(e) { console.error("Chart YX Error:", e); }
+}
+
+function drawPsat() {
+  try {
+      const p1=[],p2=[];
+      for(let T=60;T<=100;T+=2){
+          p1.push({x:T, y:antoine(T,0)});
+          p2.push({x:T, y:antoine(T,1)});
+      }
+      
+      const canvas = document.getElementById('chart-psat');
+      if(!canvas) return;
+
+      if(!chartPsat){
+        chartPsat=new Chart(canvas.getContext('2d'),{
+          type:'line',
+          data:{datasets:[
+            {label:'Ethanol',data:p1,borderColor:'#0284c7',tension:0.4,pointRadius:3,showLine:true},
+            {label:'Water',data:p2,borderColor:'#2563eb',tension:0.4,pointRadius:3,showLine:true}
+          ]},
+          options: {
+            responsive:true, maintainAspectRatio:false,
+            scales: {
+              x: {type: 'linear', title:{display:true,text:'Temperature (°C)',color:'#475569'},ticks:{color:'#475569'},grid:{color:'rgba(0,0,0,0.05)'}},
+              y: {type: 'linear', ...yAxis()}
+            }
+          }
+        });
+      }
+  } catch(e) { console.error("Chart Psat Error:", e); }
+}
+
+function drawMcCabe() {
+  try {
+      const R = safeGetVal('sl-R-eq', 3.0);
+      const xD = Math.max(0.01, Math.min(0.99, safeGetVal('sl-xD-eq', 0.894)));
+      const xB = Math.max(0.001, Math.min(0.99, safeGetVal('sl-xB-eq', 0.010)));
+
+      const eqData=[];
+      for(let xi=0;xi<=1;xi+=0.02){
+        let x_calc = Math.max(1e-5, Math.min(0.99999, xi));
+        let x_vec = [x_calc, 1-x_calc, 0];
+        let T_bub = getBubblePoint(x_vec, 760);
+        let gammas = nrtl_gamma(x_vec, T_bub);
+        let p = getPsat(T_bub);
+        let y = (x_calc * gammas[0] * p[0]) / 760;
+        eqData.push({x: xi, y: y});
+      }
+
+      const recData = [
+        {x: xB, y: (R/(R+1))*xB + xD/(R+1)},
+        {x: xD, y: xD}
+      ];
+      const diagData = [{x: 0, y: 0}, {x: 1, y: 1}];
+
+      const data={datasets:[
+        {label:'NRTL Equilibrium Curve',data:eqData,borderColor:'#0284c7',tension:0.3,pointRadius:0,fill:false,showLine:true},
+        {label:'y=x',data:diagData,borderColor:'#cbd5e1',borderDash:[4,3],pointRadius:0,fill:false,showLine:true},
+        {label:`Rectifying Line (R=${R.toFixed(1)})`,data:recData,type:'line',borderColor:'#d97706',borderWidth:2,pointRadius:4,fill:false,tension:0,showLine:true}
+      ]};
+
+      const canvas = document.getElementById('chart-mccabe');
+      if(!canvas) return;
+
+      if(!chartMcCabe){
+        chartMcCabe=new Chart(canvas.getContext('2d'),{
+          type:'line', data,
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            scales:{
+              x:{type:'linear', min:0, max:1, title:{display:true,text:'x (EtOH liquid)',color:'#475569'},ticks:{color:'#475569'},grid:{color:'rgba(0,0,0,0.05)'}},
+              y:{type:'linear', min:0, max:1, title:{display:true,text:'y (EtOH vapor)',color:'#475569'},ticks:{color:'#475569'},grid:{color:'#e2e8f0'}}
+            }
+          }
+        });
+      } else {
+        chartMcCabe.data=data;
+        chartMcCabe.update();
+      }
+  } catch(e) { console.error("Chart McCabe Error:", e); }
+}
+
+function yAxis() {
+  return { title:{display:true,color:'#475569'}, ticks:{color:'#475569'}, grid:{color:'#e2e8f0'} };
+}
+
+window.onload = () => {
+  runSim();
+};
+</script>
+</body>
+</html>
